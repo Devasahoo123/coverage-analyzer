@@ -1,0 +1,164 @@
+{
+  "design": "dma_controller",
+  "overall_coverage": 54.84,
+  "suggestions": [
+    {
+      "priority": "high",
+      "difficulty": "medium",
+      "suggestion": "Create a directed test that configures the DMA with the maximum supported transfer size to stress boundary and counter handling logic.",
+      "test_outline": [
+        "Configure DMA transfer size to maximum value (e.g., 4096)",
+        "Use valid aligned source and destination addresses",
+        "Start DMA transfer",
+        "Verify successful completion and data integrity"
+      ],
+      "dependencies": [
+        "DMA max size configuration support"
+      ],
+      "reasoning": "Maximum transfer sizes often expose counter overflows or boundary-related bugs and are rarely hit by random tests.",
+      "target_bin": "cg_transfer_size.cp_size.bin max[4096]",
+      "score": 0.85
+    },
+    {
+      "priority": "high",
+      "difficulty": "medium",
+      "suggestion": "Configure the DMA in wrap burst mode with the base address placed near a boundary to trigger address wrapping.",
+      "test_outline": [
+        "Enable wrap burst mode",
+        "Set base address near boundary (e.g., 4KB)",
+        "Start DMA transfer",
+        "Verify wrapped address behavior"
+      ],
+      "dependencies": [
+        "AXI wrap burst support"
+      ],
+      "reasoning": "Wrap bursts require specific alignment and configuration, which random testing does not typically generate.",
+      "target_bin": "cg_transfer_size.cp_burst_type.bin wrap",
+      "score": 0.85
+    },
+    {
+      "priority": "medium",
+      "difficulty": "medium",
+      "suggestion": "Create a stress test that enables exactly four DMA channels simultaneously to validate arbitration behavior.",
+      "test_outline": [
+        "Enable four DMA channels",
+        "Configure simultaneous transfers",
+        "Start all channels concurrently",
+        "Verify fairness and completion of all transfers"
+      ],
+      "dependencies": [
+        "Multi-channel enable support"
+      ],
+      "reasoning": "Arbitration edge cases appear when multiple channels are active concurrently, which random tests may not hit.",
+      "target_bin": "cg_channel_arbitration.cp_active_channels.bin four_channels",
+      "score": 0.85
+    },
+    {
+      "priority": "low",
+      "difficulty": "medium",
+      "suggestion": "Inject a transient error and verify that the DMA successfully retries and completes the transfer.",
+      "test_outline": [
+        "Inject temporary fault",
+        "Allow retry logic to activate",
+        "Verify transfer completion"
+      ],
+      "dependencies": [
+        "Retry mechanism enabled"
+      ],
+      "reasoning": "Retry paths are only activated during transient failures and require explicit testing.",
+      "target_bin": "cg_error_scenarios.cp_error_recovery.bin retry_success",
+      "score": 0.85
+    },
+    {
+      "priority": "low",
+      "difficulty": "medium",
+      "suggestion": "Force a fatal error condition and verify that the DMA aborts the transfer and reports the error correctly.",
+      "test_outline": [
+        "Inject fatal error",
+        "Start DMA transfer",
+        "Verify abort behavior and status reporting"
+      ],
+      "dependencies": [
+        "Abort handling support"
+      ],
+      "reasoning": "Abort logic is triggered only for unrecoverable errors and must be explicitly validated.",
+      "target_bin": "cg_error_scenarios.cp_error_recovery.bin abort",
+      "score": 0.85
+    },
+    {
+      "priority": "high",
+      "difficulty": "hard",
+      "suggestion": "Run a stress test enabling all DMA channels simultaneously to validate arbitration, fairness, and starvation handling.",
+      "test_outline": [
+        "Enable all eight DMA channels",
+        "Configure overlapping transfers",
+        "Start transfers concurrently",
+        "Verify no starvation or deadlock occurs"
+      ],
+      "dependencies": [
+        "Full channel support",
+        "Stress test capability"
+      ],
+      "reasoning": "Maximum channel concurrency stresses arbitration logic and is critical for production robustness.",
+      "target_bin": "cg_channel_arbitration.cp_active_channels.bin all_eight",
+      "score": 0.8
+    },
+    {
+      "priority": "medium",
+      "difficulty": "hard",
+      "suggestion": "Inject a decode error by configuring the DMA to access an unmapped or invalid address region.",
+      "test_outline": [
+        "Identify unmapped address region",
+        "Configure DMA source/destination to invalid address",
+        "Start transfer",
+        "Verify DECERR response and DMA error handling"
+      ],
+      "dependencies": [
+        "Memory map knowledge",
+        "Error injection support"
+      ],
+      "reasoning": "Decode errors require deliberate invalid accesses and cannot be triggered by normal traffic.",
+      "target_bin": "cg_error_scenarios.cp_error_type.bin decode_error",
+      "score": 0.8
+    },
+    {
+      "priority": "medium",
+      "difficulty": "hard",
+      "suggestion": "Trigger a timeout by stalling the bus or delaying the slave response beyond the configured DMA timeout threshold.",
+      "test_outline": [
+        "Configure DMA transfer",
+        "Introduce bus or slave stall",
+        "Wait for timeout threshold",
+        "Verify timeout interrupt or error"
+      ],
+      "dependencies": [
+        "Bus stall capability",
+        "Timeout configuration"
+      ],
+      "reasoning": "Timeout scenarios require controlled stalling and are not exercised during standard operation.",
+      "target_bin": "cg_error_scenarios.cp_error_type.bin timeout",
+      "score": 0.8
+    }
+  ],
+  "coverage_closure_prediction": {
+    "estimated_time_to_closure_hours": 37.32,
+    "closure_probability": 0.62,
+    "blocking_bins": [
+      {
+        "covergroup": "cg_channel_arbitration",
+        "coverpoint": "cp_active_channels",
+        "bin": "bin all_eight"
+      },
+      {
+        "covergroup": "cg_error_scenarios",
+        "coverpoint": "cp_error_type",
+        "bin": "bin decode_error"
+      },
+      {
+        "covergroup": "cg_error_scenarios",
+        "coverpoint": "cp_error_type",
+        "bin": "bin timeout"
+      }
+    ]
+  }
+}

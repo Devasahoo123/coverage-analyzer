@@ -1,119 +1,131 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 function App() {
   const [data, setData] = useState(null);
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/coverage")
-      .then(res => res.json())
-      .then(setData)
-      .catch(err => console.error(err));
+    fetch("http://localhost:8000/coverage") // Make sure this matches your FastAPI endpoint
+      .then((res) => res.json())
+      .then((result) => {
+        // Sort suggestions by score descending
+        if (result.suggestions) {
+          result.suggestions.sort((a, b) => b.score - a.score);
+        }
+        setData(result);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("API error:", err);
+        setLoading(false);
+      });
   }, []);
 
-  if (!data) return <h2 style={{ padding: 20 }}>Loading coverage data...</h2>;
-
-  const filteredBins = data.uncovered_bins.filter(b =>
-    `${b.covergroup} ${b.coverpoint} ${b.bin}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  if (loading) {
+    return <div style={{ padding: 20 }}>Loading coverage data...</div>;
+  }
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial", maxWidth: 1100, margin: "auto" }}>
-      <h1>📊 Coverage Analyzer Dashboard</h1>
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h2>Coverage Analyzer Dashboard</h2>
 
-      {/* SUMMARY CARDS */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
-        <SummaryCard title="Design" value={data.design} />
-        <SummaryCard title="Overall Coverage" value={`${data.overall_coverage}%`} />
-        <SummaryCard title="Uncovered Bins" value={data.uncovered_bins.length} />
-      </div>
+      <p>
+        <strong>Design:</strong> {data.design}
+      </p>
+      <p>
+        <strong>Overall Coverage:</strong> {data.overall_coverage}%
+      </p>
 
-      {/* SEARCH */}
-      <input
-        placeholder="Search uncovered bins..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        style={{ padding: 8, width: "100%", marginBottom: 20 }}
-      />
-
-      {/* UNCOVERED BINS TABLE */}
-      <h2>🧪 Uncovered Bins</h2>
-      <table width="100%" border="1" cellPadding="8" style={{ borderCollapse: "collapse" }}>
+      <h3>Uncovered Bins</h3>
+      <table border="1" cellPadding="8" cellSpacing="0" width="100%">
         <thead>
-          <tr style={{ background: "#f2f2f2" }}>
+          <tr>
             <th>Covergroup</th>
             <th>Coverpoint</th>
             <th>Bin</th>
           </tr>
         </thead>
         <tbody>
-          {filteredBins.map((b, i) => (
-            <tr key={i}>
-              <td>{b.covergroup}</td>
-              <td>{b.coverpoint}</td>
-              <td>{b.bin}</td>
+          {data.uncovered_bins.map((bin, idx) => (
+            <tr key={idx}>
+              <td>{bin.covergroup}</td>
+              <td>{bin.coverpoint}</td>
+              <td>{bin.bin}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* SUGGESTIONS */}
-      <h2 style={{ marginTop: 30 }}>🚀 Prioritized Suggestions</h2>
+      <h3 style={{ marginTop: 30 }}>Prioritized Suggestions</h3>
+{(data.suggestions || []).map((item, idx) => (
+  <div
+    key={idx}
+    style={{
+      border: "1px solid #ccc",
+      padding: "12px",
+      marginBottom: "12px",
+      borderRadius: "4px",
+    }}
+  >
+    <p>
+      <strong>Target Bin:</strong> {item.target_bin}
+    </p>
+    <p>
+      <strong>Score:</strong> {item.score}
+    </p>
+    <p>
+      <strong>Priority:</strong> {item.priority} |{" "}
+      <strong>Difficulty:</strong> {item.difficulty}
+    </p>
+    <p>
+      <strong>Suggestion:</strong> {item.suggestion}
+    </p>
+    <p>
+      <strong>Dependencies:</strong>{" "}
+      {(item.dependencies || []).join(", ")}
+    </p>
+    <p>
+      <strong>Test Outline:</strong>
+      <ol>
+        {(item.test_outline || []).map((step, i) => (
+          <li key={i}>{step}</li>
+        ))}
+      </ol>
+    </p>
+    <p>
+      <strong>Reasoning:</strong> {item.reasoning}
+    </p>
+  </div>
+))}
 
-      {data.prioritized_suggestions.map((s, i) => (
-        <div
-          key={i}
-          style={{
-            border: "1px solid #ccc",
-            padding: 12,
-            marginBottom: 10,
-            borderLeft: `6px solid ${priorityColor(s.suggestion.priority)}`
-          }}
-        >
-          <p><b>Target:</b> {s.target}</p>
-          <p><b>Score:</b> {s.score}</p>
-          <p><b>Priority:</b> {s.suggestion.priority}</p>
-
-          <button onClick={() => setExpanded(expanded === i ? null : i)}>
-            {expanded === i ? "Hide Details" : "Show Details"}
-          </button>
-
-          {expanded === i && (
-            <div style={{ marginTop: 10 }}>
-              <p><b>Suggestion:</b> {s.suggestion.suggestion}</p>
-              <p><b>Reasoning:</b> {s.suggestion.reasoning}</p>
-            </div>
-          )}
-        </div>
-      ))}
+    <h3 style={{ marginTop: 30 }}>Coverage Closure Prediction</h3>
+    {data.coverage_closure_prediction && (
+      <div
+        style={{
+          border: "1px solid #007bff",
+          padding: "12px",
+          borderRadius: "4px",
+          backgroundColor: "#f0f8ff",
+        }}
+      >
+        <p>
+          <strong>Estimated Time to Closure:</strong>{" "}
+          {data.coverage_closure_prediction.estimated_time_to_closure_hours ?? "N/A"} hours
+        </p>
+        <p>
+          <strong>Closure Probability:</strong>{" "}
+          {(data.coverage_closure_prediction.closure_probability ?? 0) * 100}%
+        </p>
+        <p>
+          <strong>Blocking Bins:</strong>{" "}
+          {(data.coverage_closure_prediction.blocking_bins || [])
+            .map((b) => b.bin)
+            .join(", ") || "None"}
+        </p>
+      </div>
+    )}
     </div>
   );
-}
-
-/* SMALL COMPONENTS */
-
-function SummaryCard({ title, value }) {
-  return (
-    <div style={{
-      flex: 1,
-      padding: 15,
-      border: "1px solid #ddd",
-      borderRadius: 4,
-      background: "#fafafa"
-    }}>
-      <h3>{title}</h3>
-      <p style={{ fontSize: 20 }}>{value}</p>
-    </div>
-  );
-}
-
-function priorityColor(priority) {
-  if (priority === "high") return "red";
-  if (priority === "medium") return "orange";
-  return "green";
 }
 
 export default App;
