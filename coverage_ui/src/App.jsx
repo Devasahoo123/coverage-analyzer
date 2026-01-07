@@ -5,7 +5,7 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("https://coverage-analyzer-1.onrender.com")
+    fetch("https://coverage-analyzer-1.onrender.com/coverage")
       .then((res) => res.json())
       .then((result) => {
         setData(result);
