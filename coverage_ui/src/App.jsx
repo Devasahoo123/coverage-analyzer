@@ -5,13 +5,9 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/coverage") // Make sure this matches your FastAPI endpoint
+    fetch("http://localhost:8000/coverage")
       .then((res) => res.json())
       .then((result) => {
-        // Sort suggestions by score descending
-        if (result.suggestions) {
-          result.suggestions.sort((a, b) => b.score - a.score);
-        }
         setData(result);
         setLoading(false);
       })
@@ -22,12 +18,57 @@ function App() {
   }, []);
 
   if (loading) {
-    return <div style={{ padding: 20 }}>Loading coverage data...</div>;
+    return (
+      <div style={{ padding: 40, fontSize: 18, textAlign: "center" }}>
+        Loading coverage data...
+      </div>
+    );
   }
 
+  const containerStyle = {
+    maxWidth: 1200,
+    margin: "20px auto",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    color: "#333",
+  };
+
+  const sectionTitle = {
+    color: "#007bff",
+    borderBottom: "2px solid #007bff",
+    paddingBottom: "4px",
+    marginTop: "30px",
+  };
+
+  const cardStyle = {
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    padding: "16px",
+    marginBottom: "16px",
+    boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+    backgroundColor: "#fefefe",
+    transition: "transform 0.2s, box-shadow 0.2s",
+  };
+
+  const cardHover = {
+    transform: "translateY(-3px)",
+    boxShadow: "0 6px 12px rgba(0,0,0,0.15)",
+  };
+
+  const tableStyle = {
+    width: "100%",
+    borderCollapse: "collapse",
+    marginTop: "12px",
+  };
+
+  const thTdStyle = {
+    border: "1px solid #ccc",
+    padding: "10px",
+    textAlign: "left",
+  };
+
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h2>Coverage Analyzer Dashboard</h2>
+    <div style={containerStyle}>
+      <h2>🚀 Coverage Analyzer Dashboard</h2>
 
       <p>
         <strong>Design:</strong> {data.design}
@@ -36,94 +77,88 @@ function App() {
         <strong>Overall Coverage:</strong> {data.overall_coverage}%
       </p>
 
-      <h3>Uncovered Bins</h3>
-      <table border="1" cellPadding="8" cellSpacing="0" width="100%">
-        <thead>
+      <h3 style={sectionTitle}>Uncovered Bins</h3>
+      <table style={tableStyle}>
+        <thead style={{ backgroundColor: "#007bff", color: "#fff" }}>
           <tr>
-            <th>Covergroup</th>
-            <th>Coverpoint</th>
-            <th>Bin</th>
+            <th style={thTdStyle}>Covergroup</th>
+            <th style={thTdStyle}>Coverpoint</th>
+            <th style={thTdStyle}>Bin</th>
           </tr>
         </thead>
         <tbody>
-          {data.uncovered_bins.map((bin, idx) => (
+          {(data.uncovered_bins || []).map((bin, idx) => (
             <tr key={idx}>
-              <td>{bin.covergroup}</td>
-              <td>{bin.coverpoint}</td>
-              <td>{bin.bin}</td>
+              <td style={thTdStyle}>{bin.covergroup}</td>
+              <td style={thTdStyle}>{bin.coverpoint}</td>
+              <td style={thTdStyle}>{bin.bin}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <h3 style={{ marginTop: 30 }}>Prioritized Suggestions</h3>
-{(data.suggestions || []).map((item, idx) => (
-  <div
-    key={idx}
-    style={{
-      border: "1px solid #ccc",
-      padding: "12px",
-      marginBottom: "12px",
-      borderRadius: "4px",
-    }}
-  >
-    <p>
-      <strong>Target Bin:</strong> {item.target_bin}
-    </p>
-    <p>
-      <strong>Score:</strong> {item.score}
-    </p>
-    <p>
-      <strong>Priority:</strong> {item.priority} |{" "}
-      <strong>Difficulty:</strong> {item.difficulty}
-    </p>
-    <p>
-      <strong>Suggestion:</strong> {item.suggestion}
-    </p>
-    <p>
-      <strong>Dependencies:</strong>{" "}
-      {(item.dependencies || []).join(", ")}
-    </p>
-    <p>
-      <strong>Test Outline:</strong>
-      <ol>
-        {(item.test_outline || []).map((step, i) => (
-          <li key={i}>{step}</li>
-        ))}
-      </ol>
-    </p>
-    <p>
-      <strong>Reasoning:</strong> {item.reasoning}
-    </p>
-  </div>
-))}
+      <h3 style={sectionTitle}>💡 Prioritized Suggestions</h3>
+      {(data.suggestions || []).map((item, idx) => (
+        <div
+          key={idx}
+          style={{ ...cardStyle }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.transform = "translateY(-3px)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.transform = "translateY(0px)")
+          }
+        >
+          <p>
+            <strong>Target Bin:</strong> {item.target_bin}
+          </p>
+          <p>
+            <strong>Score:</strong> {item.score}
+          </p>
+          <p>
+            <strong>Priority:</strong> {item.priority} | <strong>Difficulty:</strong>{" "}
+            {item.difficulty}
+          </p>
+          <p>
+            <strong>Suggestion:</strong> {item.suggestion}
+          </p>
+          <p>
+            <strong>Dependencies:</strong>{" "}
+            {(item.dependencies || []).join(", ") || "None"}
+          </p>
+          <p>
+            <strong>Test Outline:</strong>
+          </p>
+          <ol>
+            {(item.test_outline || []).map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
+          </ol>
+          <p>
+            <strong>Reasoning:</strong> {item.reasoning}
+          </p>
+        </div>
+      ))}
 
-    <h3 style={{ marginTop: 30 }}>Coverage Closure Prediction</h3>
-    {data.coverage_closure_prediction && (
-      <div
-        style={{
-          border: "1px solid #007bff",
-          padding: "12px",
-          borderRadius: "4px",
-          backgroundColor: "#f0f8ff",
-        }}
-      >
-        <p>
-          <strong>Estimated Time to Closure:</strong>{" "}
-          {data.coverage_closure_prediction.estimated_time_to_closure_hours ?? "N/A"} hours
-        </p>
-        <p>
-          <strong>Closure Probability:</strong>{" "}
-          {(data.coverage_closure_prediction.closure_probability ?? 0) * 100}%
-        </p>
-        <p>
-          <strong>Blocking Bins:</strong>{" "}
-          {(data.coverage_closure_prediction.blocking_bins || [])
-            .map((b) => b.bin)
-            .join(", ") || "None"}
-        </p>
-      </div>
-    )}
+      <h3 style={sectionTitle}>⏱️ Coverage Closure Prediction</h3>
+      {data.coverage_closure_prediction && (
+        <div style={{ ...cardStyle, backgroundColor: "#f0f8ff" }}>
+          <p>
+            <strong>Estimated Time to Closure:</strong>{" "}
+            {data.coverage_closure_prediction.estimated_time_to_closure_hours ?? "N/A"} hours
+          </p>
+          <p>
+            <strong>Closure Probability:</strong>{" "}
+            {(data.coverage_closure_prediction.closure_probability ?? 0) * 100}%
+          </p>
+          <p>
+            <strong>Blocking Bins:</strong>{" "}
+            {(data.coverage_closure_prediction.blocking_bins || [])
+              .map((b) => b.bin)
+              .join(", ") || "None"}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
